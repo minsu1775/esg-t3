@@ -1,0 +1,50 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Env
+.env
+.env.local
+
+# Node
+node_modules/
+.next/
+frontend/.next/
+frontend/node_modules/
+
+# Test 산출물
+target/modulith-docs/
+
+# Docker volumes
+data/postgres/
+data/redis/
+data/tempo/
+data/loki/
+data/prometheus/
+data/grafana/
