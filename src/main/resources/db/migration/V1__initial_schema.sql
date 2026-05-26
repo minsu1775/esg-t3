@@ -37,6 +37,7 @@ CREATE TABLE event_publication (
     completion_date TIMESTAMP WITH TIME ZONE,
     status VARCHAR(36),
     last_resubmission_date TIMESTAMP WITH TIME ZONE,
+    completion_attempts INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 );
 
