@@ -20,7 +20,8 @@ repositories {
 extra["springModulithVersion"] = "2.0.0"
 extra["testcontainersVersion"] = "1.21.0"
 extra["openTelemetryVersion"] = "1.42.1"
-extra["openTelemetryInstrumentationVersion"] = "2.28.1"
+// OpenTelemetry instrumentation은 alpha BOM만 게시됨 (정상). stable 채널 없음.
+extra["openTelemetryInstrumentationVersion"] = "2.28.1-alpha"
 
 dependencies {
     // Web / API
@@ -76,7 +77,7 @@ dependencyManagement {
     imports {
         mavenBom("org.springframework.modulith:spring-modulith-bom:${property("springModulithVersion")}")
         mavenBom("org.testcontainers:testcontainers-bom:${property("testcontainersVersion")}")
-        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:${property("openTelemetryInstrumentationVersion")}-alpha")
+        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:${property("openTelemetryInstrumentationVersion")}")
     }
 }
 
