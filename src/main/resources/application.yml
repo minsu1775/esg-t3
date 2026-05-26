@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: esg-t3
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+  modulith:
+    events:
+      jdbc-schema-initialization:
+        enabled: false   # Flyway V1이 직접 생성
+
+server:
+  port: 8080
+  forward-headers-strategy: native
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,modulith
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+scheduler:
+  enabled: true
+  zone: Asia/Seoul
+
+otel:
+  service:
+    name: esg-t3
+  exporter:
+    otlp:
+      endpoint: http://localhost:4317
+      protocol: grpc
+  traces:
+    sampler: parentbased_always_on
+  metrics:
+    exporter: otlp
+  logs:
+    exporter: otlp

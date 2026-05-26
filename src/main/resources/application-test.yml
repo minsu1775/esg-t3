@@ -1,0 +1,16 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+scheduler:
+  enabled: false
+
+otel:
+  traces:
+    sampler: always_off
+  metrics:
+    exporter: none
+  logs:
+    exporter: none
