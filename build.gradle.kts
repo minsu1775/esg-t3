@@ -20,6 +20,7 @@ repositories {
 extra["springModulithVersion"] = "2.0.0"
 extra["testcontainersVersion"] = "1.21.0"
 extra["openTelemetryVersion"] = "1.42.1"
+extra["openTelemetryInstrumentationVersion"] = "2.28.1"
 
 dependencies {
     // Web / API
@@ -50,7 +51,7 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-api")
     implementation("io.opentelemetry:opentelemetry-sdk")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:2.10.0-alpha")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
 
     // 구조화 로그
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
@@ -75,6 +76,7 @@ dependencyManagement {
     imports {
         mavenBom("org.springframework.modulith:spring-modulith-bom:${property("springModulithVersion")}")
         mavenBom("org.testcontainers:testcontainers-bom:${property("testcontainersVersion")}")
+        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:${property("openTelemetryInstrumentationVersion")}-alpha")
     }
 }
 
