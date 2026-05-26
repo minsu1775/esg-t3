@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: esg-t3-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: esgt3
+      POSTGRES_USER: esgt3
+      POSTGRES_PASSWORD: esgt3-local
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    # Postgres 18+ expects the mount point at /var/lib/postgresql so data is
+    # stored under a major-version subdirectory (e.g. /var/lib/postgresql/18/docker).
+    # See: https://github.com/docker-library/postgres/pull/1259
+    volumes:
+      - ./data/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esgt3 -d esgt3"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: esg-t3-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
