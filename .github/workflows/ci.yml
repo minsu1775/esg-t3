@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend-test:
+    name: Backend — Test + Modularity + ArchUnit
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: esgt3_test
+          POSTGRES_USER: esgt3_test
+          POSTGRES_PASSWORD: esgt3-test-pw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U esgt3_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 25 설정
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Gradle 캐시
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 전체 테스트 실행
+        run: ./gradlew test
+
+      - name: ModularityTest
+        run: ./gradlew test --tests "*ModularityTest"
+
+      - name: ArchUnit
+        run: ./gradlew test --tests "*ArchitectureTest" --tests "*ConventionTest"
+
+      - name: Modulith Documenter 산출물 확인
+        run: test -d build/spring-modulith-docs
+
+      - name: Modulith Documenter 산출물 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: modulith-docs
+          path: build/spring-modulith-docs/
+
+  runbook-validation:
+    name: Runbook 링크 검증
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runbook 링크 검증
+        run: |
+          chmod +x ./tests/runbook-link-validation.sh
+          ./tests/runbook-link-validation.sh
+
+  frontend-build:
+    name: Frontend — TypeScript + Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node.js 22 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 의존성 설치
+        run: npm ci
+      - name: 타입체크
+        run: npx tsc --noEmit
+      - name: 빌드
+        run: npm run build
