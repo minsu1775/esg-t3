@@ -33,10 +33,12 @@ groups:
         labels:
           severity: warning
           team: esg-ops
-          runbook: "docs/runbook/05-auth-attack.md"
+          runbook: "docs/runbook/02-rls-leak.md"
         annotations:
           summary: "JWT 인증 실패 분당 100건 초과"
-          description: "인증 공격 가능성."
+          description: |
+            인증 공격 가능성.
+            (인증·접근 관련 보안 사고 절차는 Runbook 02 참조. 전용 Auth Attack Runbook은 Phase 1~2에 분리 예정.)
 
       - alert: DbConnectionPoolNearMax
         expr: |

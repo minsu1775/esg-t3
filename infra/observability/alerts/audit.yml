@@ -21,12 +21,13 @@ groups:
         labels:
           severity: critical
           team: esg-ops
-          runbook: "docs/runbook/02-outbox-dlq.md"
+          runbook: "docs/runbook/01-hash-chain-mismatch.md"
         annotations:
           summary: "Outbox DLQ 진입 — event_type={{ $labels.event_type }}"
           description: |
             Outbox 이벤트 재시도 5회 실패 후 DLQ로 격리됨.
             진단: ./scripts/runbook/02-outbox-investigate.sh
+            (전용 Outbox Runbook은 Phase 2에 분리 예정. 그 전까지는 Runbook 01의 audit 절차 참조.)
 
       - alert: AuditLagHigh
         expr: esg_t3_audit_outbox_lag_seconds > 60
@@ -34,10 +35,12 @@ groups:
         labels:
           severity: critical
           team: esg-ops
-          runbook: "docs/runbook/03-audit-lag.md"
+          runbook: "docs/runbook/01-hash-chain-mismatch.md"
         annotations:
           summary: "AuditLog 폴러 지연 60초 초과"
-          description: "Outbox 처리 지연. AuditLog 누락 의심."
+          description: |
+            Outbox 처리 지연. AuditLog 누락 의심.
+            (전용 Audit Lag Runbook은 Phase 2에 분리 예정. 그 전까지는 Runbook 01의 audit 절차 참조.)
 
       - alert: PolicyDenialSpike
         expr: |
@@ -50,7 +53,9 @@ groups:
         labels:
           severity: warning
           team: esg-ops
-          runbook: "docs/runbook/04-policy-denial-spike.md"
+          runbook: "docs/runbook/02-rls-leak.md"
         annotations:
           summary: "정책 DENY 비율 10% 초과"
-          description: "권한 거부 비율 급증. 공격 또는 정책 오류 가능성."
+          description: |
+            권한 거부 비율 급증. 공격 또는 정책 오류 가능성.
+            (정책/접근 관련 보안 사고 절차는 Runbook 02 참조.)
