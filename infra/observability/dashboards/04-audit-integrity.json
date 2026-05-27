@@ -1,0 +1,41 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "id": null,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Hash Chain 검증 결과",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "esg_t3_hash_chain_integrity_check_total{result=\"ok\"}", "refId": "A" },
+        { "expr": "esg_t3_hash_chain_integrity_check_total{result=\"mismatch\"}", "refId": "B" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Outbox 상태 분포",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 0 },
+      "targets": [
+        { "expr": "sum by (status) (esg_t3_audit_outbox_size{status=~\"PENDING|PROCESSING|DLQ\"})", "refId": "A" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "정책 평가 통계 (effect)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        { "expr": "sum by (effect) (rate(esg_t3_policy_evaluation_total[5m]))", "refId": "A" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["esg-t3", "audit"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "04 — Audit Integrity",
+  "uid": "esg-t3-04"
+}

@@ -1,0 +1,39 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "id": null,
+  "panels": [
+    {
+      "id": 1,
+      "title": "테넌트별 활동 데이터 입력 추이",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum by (tenant_id) (rate(esg_t3_activity_data_submitted_total[5m]))", "refId": "A" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "테넌트별 보고서 생성 횟수",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "sum by (tenant_id) (increase(esg_t3_report_generation_total[1h]))", "refId": "A" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["esg-t3", "tenant"],
+  "templating": {
+    "list": [
+      {
+        "name": "tenant_id",
+        "type": "query",
+        "query": "label_values(esg_t3_active_tenants_total, tenant_id)"
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "02 — Tenant Detail",
+  "uid": "esg-t3-02"
+}
