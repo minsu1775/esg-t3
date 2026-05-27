@@ -1699,11 +1699,11 @@ esg-t3/
 ├── settings.gradle.kts
 ├── docker-compose.yml
 └── .claude/
-    ├── rules/                            # 17개
+    ├── rules/                            # 18개 (00~17 인덱스)
     └── settings.local.json
 ```
 
-### 8.4 `.claude/rules/` 구조 (esg-t2 12개 + esg-t3 5개)
+### 8.4 `.claude/rules/` 구조 (esg-t2 13개 계승 + esg-t3 신규 5개 = 총 18개, 00~17)
 
 | 파일 | 내용 | 출처 |
 |---|---|---|
