@@ -1,0 +1,56 @@
+groups:
+  - name: audit
+    interval: 30s
+    rules:
+      - alert: HashChainMismatch
+        expr: increase(esg_t3_hash_chain_integrity_check_total{result="mismatch"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: esg-ops
+          runbook: "docs/runbook/01-hash-chain-mismatch.md"
+        annotations:
+          summary: "Hash Chain 무결성 오류 — tenant_id={{ $labels.tenant_id }}"
+          description: |
+            AuditLog Hash Chain 검증 실패. 즉시 Runbook 01 참조.
+            진단 명령: ./scripts/runbook/01-diagnose-hash-chain.sh {{ $labels.tenant_id }}
+
+      - alert: OutboxDlqEntered
+        expr: rate(esg_t3_audit_outbox_dlq_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: esg-ops
+          runbook: "docs/runbook/02-outbox-dlq.md"
+        annotations:
+          summary: "Outbox DLQ 진입 — event_type={{ $labels.event_type }}"
+          description: |
+            Outbox 이벤트 재시도 5회 실패 후 DLQ로 격리됨.
+            진단: ./scripts/runbook/02-outbox-investigate.sh
+
+      - alert: AuditLagHigh
+        expr: esg_t3_audit_outbox_lag_seconds > 60
+        for: 5m
+        labels:
+          severity: critical
+          team: esg-ops
+          runbook: "docs/runbook/03-audit-lag.md"
+        annotations:
+          summary: "AuditLog 폴러 지연 60초 초과"
+          description: "Outbox 처리 지연. AuditLog 누락 의심."
+
+      - alert: PolicyDenialSpike
+        expr: |
+          (
+            sum(rate(esg_t3_policy_evaluation_total{effect="DENY"}[5m]))
+            /
+            sum(rate(esg_t3_policy_evaluation_total[5m]))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: esg-ops
+          runbook: "docs/runbook/04-policy-denial-spike.md"
+        annotations:
+          summary: "정책 DENY 비율 10% 초과"
+          description: "권한 거부 비율 급증. 공격 또는 정책 오류 가능성."

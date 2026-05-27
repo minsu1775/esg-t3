@@ -1,0 +1,50 @@
+groups:
+  - name: system
+    interval: 30s
+    rules:
+      - alert: ApiP95SlowResponse
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: esg-ops
+        annotations:
+          summary: "API P95 응답 시간 500ms 초과"
+          description: "SLO 위반 가능성."
+
+      - alert: ReportGenerationSlow
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(esg_t3_report_generation_duration_seconds_bucket[5m])) by (le)
+          ) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          team: esg-ops
+        annotations:
+          summary: "보고서 생성 P95 1.5초 초과"
+
+      - alert: JwtAuthFailureSpike
+        expr: rate(esg_t3_jwt_auth_failures_total[1m]) > 100
+        for: 1m
+        labels:
+          severity: warning
+          team: esg-ops
+          runbook: "docs/runbook/05-auth-attack.md"
+        annotations:
+          summary: "JWT 인증 실패 분당 100건 초과"
+          description: "인증 공격 가능성."
+
+      - alert: DbConnectionPoolNearMax
+        expr: |
+          (hikaricp_connections_active / hikaricp_connections_max) > 0.95
+        for: 5m
+        labels:
+          severity: warning
+          team: esg-ops
+        annotations:
+          summary: "DB 연결 풀 95% 초과"
+          description: "연결 풀 고갈 임박."
