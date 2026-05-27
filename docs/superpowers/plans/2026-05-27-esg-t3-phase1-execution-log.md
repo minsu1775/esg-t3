@@ -68,34 +68,91 @@ Phase 0 실행 환경과 동일 (`docs/superpowers/plans/2026-05-26-esg-t3-phase
 > - fix-subagent: ...
 > ```
 
-### Task 1: V2 마이그레이션 — iam + entity 테이블
+### Task 1: V3 마이그레이션 — iam + entity 테이블 ✅
 
-- **Status**: TODO
-- 실행 시 위 템플릿대로 채움
+- **Status**: DONE
+- **Commit**: `ae57115`
+- **산출물**: `src/main/resources/db/migration/V3__iam_and_entity_tables.sql` (75줄)
+- **plan 정정**: V2가 Phase 0(disclosure_schedule_seed)에 점유되어 있어 Phase 1 마이그레이션을 V3/V4/V5로 시프트
+- **검증**: `./gradlew test --tests "*ApplicationContextTest"` → BUILD SUCCESSFUL (23s)
+- **소요 시간**: 약 15분
 
-### Task 2: V3 마이그레이션 — app_role + RLS
+#### 서브에이전트 호출 상세
+- (시도 1) implementer 서브에이전트 dispatch → **세션 한도 초과로 시작 전 종료** (agentId a3956ca49d56cc12b)
+- (대안 적용) 인라인 실행으로 전환 — 단순 SQL 작성 task는 인라인이 토큰 효율적
 
-- **Status**: TODO
+#### 발견 사항
+- **L-P1-06 후보**: Phase 0 산출물의 마이그레이션 버전을 plan 작성 시 확인하지 못해 V2 충돌 발생. self-review §1 spec 커버리지 점검에서 마이그레이션 번호 검증 단계가 누락되어 있었다. 향후 plan에서 마이그레이션 추가 시 `ls db/migration/` 출력을 plan 본문에 인용해 번호 충돌을 사전 방지.
+- 서브에이전트 세션 한도 → 단순 task는 인라인 우선, 복잡 task만 서브에이전트 dispatch로 전환 검토
 
-### Task 3: PolicyContext + Subject + Resource + PolicyAction
+### Task 2: V4 마이그레이션 — app_role + RLS ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `3560e0b`
+- **산출물**: `src/main/resources/db/migration/V4__rls_and_app_role.sql` (47줄)
+- **검증**: `./gradlew test --tests "*ApplicationContextTest"` → BUILD SUCCESSFUL (18s)
+- **소요 시간**: 약 5분
 
-### Task 4: PolicyDecision + PolicyEffect
+#### 서브에이전트 호출 상세
+- 인라인 실행 (단순 SQL, 토큰 효율 우선)
 
-- **Status**: TODO
+#### 발견 사항
+- `DO $$ ... END$$` PL/pgSQL 블록이 Flyway·Testcontainers PG 18에서 정상 적용
+- RLS 활성화·정책 생성 모두 성공. RLS 동작 자체 검증은 Task 13에서 통합 테스트로 수행
 
-### Task 5: PolicyDocument + PolicyRule + WhenClauseMatcher
+### Task 3: PolicyContext + Subject + Resource + PolicyAction ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `4b1a687`
+- **산출물**: 5 main + 1 test = 6 파일 (184줄)
+  - `iam/domain/PolicyAction.java` (enum 8 액션)
+  - `iam/domain/Subject.java` (record, 5 필드, immutable Set)
+  - `iam/domain/Resource.java` (record, immutable Map)
+  - `iam/domain/PolicyContext.java` (record + Environment 중첩 record)
+  - `iam/domain/package-info.java` (Spring·JPA 의존 0 명시)
+  - test: `PolicyContextTest` 5건
+- **검증**: `./gradlew test --tests "*PolicyContextTest"` → BUILD SUCCESSFUL (7s)
+- **소요 시간**: 약 8분
 
-### Task 6: PolicyEvaluator
+#### 서브에이전트 호출 상세
+- 인라인 실행 (단순 record 작성, TDD Red→Green 5건)
 
-- **Status**: TODO
+#### 발견 사항
+- Plan에 명시되지 않았던 추가 테스트 1건 추가: `Subject_assignedEntityIds도_immutable로_노출한다` — Resource의 immutable 검증과 대칭 보장
 
-### Task 7: PolicyRegistry
+### Task 4: PolicyDecision + PolicyEffect ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `94a8ed8`
+- **산출물**: PolicyEffect.java, PolicyDecision.java, PolicyDecisionTest.java (88줄 / 5건 통과)
+- **검증**: BUILD SUCCESSFUL (6s)
+- **인라인 실행**
+
+### Task 5: PolicyDocument + PolicyRule + WhenClauseMatcher ✅
+
+- **Status**: DONE
+- **Commit**: `bb66da1`
+- **산출물**: PolicyRule, PolicyDocument, WhenClauseMatcher + PolicyDocumentTest (321줄 / 6건 통과)
+- **검증**: BUILD SUCCESSFUL (3s, 1차 실패 → 변수 치환 버그 수정 후 통과)
+
+#### 발견 + 수정
+- **버그**: `contains` 매처가 `${resource.entityId}` 변수 치환을 누락 (`matchWithMatcher`가 `ctx`를 받지 않음)
+- **수정**: `matchWithMatcher`에 `ctx` 파라미터 추가 + operand 값에 `resolveVariable` 재귀 적용
+- **부수 효과**: `in` 매처도 동일 패턴 + CSV 문자열 분기 추가 (`env.lockedTenantIds`가 `System.getProperty`에서 CSV 형태로 오는 케이스 대비). 이는 emergency-lockdown.yaml의 정책 실행 시 필수.
+
+### Task 6: PolicyEvaluator ✅
+
+- **Status**: DONE
+- **Commit**: `394c7c5`
+- **산출물**: PolicyEvaluator + PolicyEvaluatorTest + PolicyEvaluatorPriorityTest (168줄 / 5건 통과)
+- **검증**: priority 250 > 200 > 100 > 0 순서 평가 정상. SUPER_ADMIN 전권보다 emergency-lockdown 우선.
+
+### Task 7: PolicyRegistry ✅
+
+- **Status**: DONE
+- **Commit**: `91f9e27`
+- **산출물**: PolicyRegistry + PolicyRegistryTest (93줄 / 3건 통과 — concurrent 안전성 포함)
+- **검증**: 읽기·쓰기 동시 400회 5초 내 NPE 없이 완료
 
 ### Task 8: 정책 YAML 6개 + 스키마 문서
 
