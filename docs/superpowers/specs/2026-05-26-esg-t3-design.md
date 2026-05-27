@@ -272,19 +272,22 @@ esg-t2의 8개 원칙을 모두 계승하고 다음 3개를 추가:
 
 ## 섹션 2. 아키텍처 개요 & Spring Modulith 모듈 구조
 
-### 2.1 최상위 패키지 & 모듈 (8개)
+### 2.1 최상위 패키지 & 모듈 (9개 — Spring Modulith 자동 인식 포함)
 
 ```
 ai.claudecode.esgt3
-├── iam/        ★ NEW: Identity & Access (Tenant·User·Role + ABAC 정책 엔진)
-├── entity/     # 법인(LegalEntity) 관리 + 계층/연결 경계
-├── audit/      # AuditLog + Hash Chain + Outbox (@Auditable AOP)
-├── ghg/        # GHG 배출량 계산 (Scope 1/2 only; Scope 3는 M+1)
-├── evidence/   ★ NEW(분리): 증빙 파일 + SHA-256 + Object Storage
-├── vw/         # Verification Workspace (외부 검증인 Snapshot/Comment)
-├── rpt/        # 보고서 생성 (KSSB 2 PDF + narrative 슬롯)
-└── shared/     # 공통 Value Object, Event 기반 타입, Exception, Web 응답
+├── iam/           ★ NEW: Identity & Access (Tenant·User·Role + ABAC 정책 엔진)
+├── entity/        # 법인(LegalEntity) 관리 + 계층/연결 경계
+├── audit/         # AuditLog + Hash Chain + Outbox (@Auditable AOP)
+├── ghg/           # GHG 배출량 계산 (Scope 1/2 only; Scope 3는 M+1)
+├── evidence/      ★ NEW(분리): 증빙 파일 + SHA-256 + Object Storage
+├── vw/            # Verification Workspace (외부 검증인 Snapshot/Comment)
+├── rpt/           # 보고서 생성 (KSSB 2 PDF + narrative 슬롯)
+├── shared/        # 공통 Value Object, Event 기반 타입, Exception, Web 응답
+└── observability/ # ★ Phase 0 갱신: OTel SDK 설정 등 cross-cutting (자동 모듈로 인식됨, §2.4 참조)
 ```
+
+> **갱신 이력**: 초안에는 8개 모듈 + observability cross-cutting (config 패키지)로 설계했으나, Phase 0 실행 시 Spring Modulith 2.0.0이 `observability/`도 자동 모듈로 인식하여 **9개 모듈**로 확정. design 의도(cross-cutting)와 Modulith 동작이 정합화됨.
 
 ### 2.2 esg-t2 대비 모듈 구조 변경
 
@@ -306,11 +309,13 @@ moduleName/
 └── package-info.java  # @ApplicationModule + @NamedInterface 선언
 ```
 
-### 2.4 횡단 관심사 (Cross-cutting; 모듈 아님)
+### 2.4 횡단 관심사 (Cross-cutting)
 
-- **observability/** (config 패키지): OpenTelemetry SDK 설정, Tracer/Meter, Custom Metric, Log MDC
+- **observability/** — **Spring Modulith가 자동 모듈로 인식** (L3-P0-11). 최상위 앱 패키지 직하위 패키지는 `@ApplicationModule` 없어도 모듈로 카운트됨(L-P0-06). 따라서 **실제 모듈 수는 9개**(iam, entity, audit, ghg, evidence, vw, rpt, shared, observability). OpenTelemetry SDK 설정, Tracer/Meter, Custom Metric, Log MDC, ActuatorSecurityConfig(Phase 0 임시) 등을 담는다. Phase 1+ 진입 시 `@ApplicationModule(allowedDependencies = {})` 명시 권장.
 - **governance/** (테스트 패키지 `src/test/java/.../governance`): ArchUnit 테스트, ModularityTest, Convention Test, Event Catalog 검증
 - **docs/runbook/** (문서): 운영 절차 파일들
+
+> **Phase 0 산출물 반영**: `ModularityTest.모듈_9개가_등록된다()` — observability 포함 9개 카운트.
 
 ### 2.5 데이터·이벤트 흐름
 

@@ -1,0 +1,50 @@
+# esg-t3 .gitattributes
+# Windows + Linux 혼용 개발 환경에서 line ending 일관성 보장.
+# 매 커밋의 LF→CRLF 경고를 제거.
+
+# 텍스트 파일은 working tree에서는 OS 기본, 저장소에는 LF로 정규화
+* text=auto eol=lf
+
+# Unix 셸 스크립트는 반드시 LF (CI/Linux 컨테이너에서 실행)
+*.sh        text eol=lf
+gradlew     text eol=lf
+
+# Windows 배치 파일은 CRLF
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# JVM 빌드·소스
+*.java      text eol=lf
+*.kts       text eol=lf
+*.kt        text eol=lf
+
+# 설정·문서
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.json      text eol=lf
+*.xml       text eol=lf
+*.properties text eol=lf
+*.md        text eol=lf
+*.sql       text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+
+# Frontend
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.mjs       text eol=lf
+
+# 바이너리는 명시적으로 binary 표시
+*.jar       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.tar       binary
+*.gz        binary
+*.svg       text eol=lf
