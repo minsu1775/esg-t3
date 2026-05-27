@@ -154,17 +154,33 @@ Phase 0 실행 환경과 동일 (`docs/superpowers/plans/2026-05-26-esg-t3-phase
 - **산출물**: PolicyRegistry + PolicyRegistryTest (93줄 / 3건 통과 — concurrent 안전성 포함)
 - **검증**: 읽기·쓰기 동시 400회 5초 내 NPE 없이 완료
 
-### Task 8: 정책 YAML 6개 + 스키마 문서
+### Task 8: 정책 YAML 6개 + 스키마 문서 ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `0e9a8ea`
+- **산출물**: 8 파일 (README + schema + 6 YAML, 총 268줄, 11 규칙, 14 tests 케이스)
+- **인라인 실행**
 
-### Task 9: PolicyYamlLoader + PolicyEngineConfig + tests 자동 실행
+### Task 9: PolicyYamlLoader + PolicyEngineConfig + tests 자동 실행 ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `4164333`
+- **산출물**: PolicyYamlLoader + PolicyConfigurationException + PolicyEngineConfig + 2 test (316줄)
+- **검증**: PolicyYamlLoaderTest 3건 + PolicyYamlTestCasesTest 16건 동적 → **모두 통과**
+- **DoD #1 달성**: ABAC 정책 단위 테스트 ≥ 20건 (현재 43건)
 
-### Task 10: PolicyHotReloader
+#### 발견 + 수정
+- EsgException이 abstract → PolicyConfigurationException 신설 (첫 EsgException 구체 하위)
+- buildContext에서 t1/e1/u1 같은 짧은 ID도 UUID로 정규화하여 WhenClauseMatcher의 equalsCoerced 비교가 일관성 있게 동작하도록 함
 
-- **Status**: TODO
+### Task 10: PolicyHotReloader ✅
+
+- **Status**: DONE
+- **Commit**: `ddc30a5`
+- **산출물**: PolicyHotReloader + PolicyHotReloaderTest + PolicyEngineConfig @Bean + application.yml (163줄)
+- **검증**: TempDir에 새 YAML 작성 → 5초 내 PolicyRegistry 갱신 확인 (Awaitility)
+- **DoD #5 달성**: 정책 YAML 핫리로드 < 5초
+- **부수 효과**: ApplicationContextTest 통과 — Spring 컨텍스트가 정책 6개 로드 후 부팅 성공
 
 ### Task 11: V4 policy_decisions + PolicyDecisionLogger
 
