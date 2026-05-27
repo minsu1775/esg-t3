@@ -36,6 +36,14 @@ scheduler:
   enabled: true
   zone: Asia/Seoul
 
+esg:
+  policy:
+    directory: policies/iam/        # classpath 기준
+    hot-reload:
+      enabled: false                 # 운영에서만 true
+      directory: ./policies/iam      # 호스트 파일시스템 경로
+      interval-ms: 1000
+
 otel:
   service:
     name: esg-t3
