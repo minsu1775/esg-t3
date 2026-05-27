@@ -1,0 +1,23 @@
+policies:
+  - id: emergency-lockdown
+    description: Hash Chain 오류·RLS 누락 등 비상 시 특정 tenant에 대한 WRITE/APPROVE/DELETE 차단
+    effect: DENY
+    priority: 250
+    when:
+      action: [WRITE, DELETE, APPROVE]
+      resource.tenantId: { in: "${env.lockedTenantIds}" }
+    tests:
+      - name: 격리된_tenant의_WRITE_차단
+        ctx:
+          subject: { role: SUPER_ADMIN, tenantId: t1 }
+          resource: { type: ActivityData, tenantId: t-locked, attributes: { approvalState: DRAFT } }
+          action: WRITE
+          env: { lockedTenantIds: [t-locked] }
+        expect: DENY
+      - name: 격리_안된_tenant는_정상_평가
+        ctx:
+          subject: { role: SUPER_ADMIN, tenantId: t1 }
+          resource: { type: ActivityData, tenantId: t-safe, attributes: { approvalState: DRAFT } }
+          action: WRITE
+          env: { lockedTenantIds: [t-locked] }
+        expect: NOT_APPLICABLE

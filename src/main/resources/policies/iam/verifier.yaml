@@ -1,0 +1,38 @@
+policies:
+  - id: verifier-snapshot-read-and-comment
+    description: VERIFIER는 지정된 Snapshot만 READ/COMMENT/SIGN
+    effect: PERMIT
+    when:
+      subject.role: VERIFIER
+      subject.assignedEntityIds: { contains: "${resource.snapshotId}" }
+      action: [READ, COMMENT, SIGN, VERIFY]
+      resource.type: VerificationSnapshot
+    tests:
+      - name: VERIFIER가_지정_Snapshot_READ_가능
+        ctx:
+          subject: { role: VERIFIER, tenantId: t1, assignedEntityIds: [s1] }
+          resource: { type: VerificationSnapshot, tenantId: t1, attributes: { snapshotId: s1 } }
+          action: READ
+        expect: PERMIT
+      - name: VERIFIER가_미지정_Snapshot_접근_시_NOT_APPLICABLE
+        ctx:
+          subject: { role: VERIFIER, tenantId: t1, assignedEntityIds: [s1] }
+          resource: { type: VerificationSnapshot, tenantId: t1, attributes: { snapshotId: s2 } }
+          action: READ
+        expect: NOT_APPLICABLE
+
+  - id: verifier-no-write-snapshot
+    description: VERIFIER는 Snapshot 자체를 변경할 수 없다 (INSERT-only)
+    effect: DENY
+    priority: 50
+    when:
+      subject.role: VERIFIER
+      action: [WRITE, DELETE]
+      resource.type: VerificationSnapshot
+    tests:
+      - name: VERIFIER가_Snapshot_WRITE_시도_시_차단
+        ctx:
+          subject: { role: VERIFIER, tenantId: t1, assignedEntityIds: [s1] }
+          resource: { type: VerificationSnapshot, tenantId: t1, attributes: { snapshotId: s1 } }
+          action: WRITE
+        expect: DENY

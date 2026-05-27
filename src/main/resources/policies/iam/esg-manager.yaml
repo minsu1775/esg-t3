@@ -1,0 +1,57 @@
+# ESG_MANAGER 역할의 ABAC 정책
+policies:
+  - id: esg-manager-write-own-entity
+    description: ESG_MANAGER는 담당 법인의 DRAFT/REJECTED 활동 데이터만 입력·수정
+    effect: PERMIT
+    when:
+      subject.role: ESG_MANAGER
+      subject.tenantId: "${resource.tenantId}"
+      subject.assignedEntityIds: { contains: "${resource.entityId}" }
+      action: [WRITE, READ]
+      resource.type: ActivityData
+      resource.approvalState: [DRAFT, REJECTED]
+    tests:
+      - name: ESG_MANAGER가_담당_법인_DRAFT_데이터를_쓸수있다
+        ctx:
+          subject: { role: ESG_MANAGER, tenantId: t1, assignedEntityIds: [e1] }
+          resource: { type: ActivityData, tenantId: t1, attributes: { entityId: e1, approvalState: DRAFT } }
+          action: WRITE
+        expect: PERMIT
+      - name: ESG_MANAGER가_담당_아닌_법인_접근_시_NOT_APPLICABLE
+        ctx:
+          subject: { role: ESG_MANAGER, tenantId: t1, assignedEntityIds: [e1] }
+          resource: { type: ActivityData, tenantId: t1, attributes: { entityId: e2, approvalState: DRAFT } }
+          action: WRITE
+        expect: NOT_APPLICABLE
+
+  - id: esg-manager-self-approval-prohibition
+    description: ESG_MANAGER는 자기 작성 데이터를 자기 승인할 수 없다 (SoD)
+    effect: DENY
+    priority: 100
+    when:
+      subject.role: ESG_MANAGER
+      action: APPROVE
+      resource.createdBy: "${subject.userId}"
+    tests:
+      - name: ESG_MANAGER가_자기_작성_데이터_승인_시_차단
+        ctx:
+          subject: { role: ESG_MANAGER, userId: u1, tenantId: t1, assignedEntityIds: [e1] }
+          resource: { type: ActivityData, tenantId: t1, attributes: { entityId: e1, createdBy: u1 } }
+          action: APPROVE
+        expect: DENY
+
+  - id: esg-manager-read-own-tenant
+    description: ESG_MANAGER는 동일 테넌트의 활동 데이터를 읽을 수 있다 (담당 외 법인도 READ 허용)
+    effect: PERMIT
+    when:
+      subject.role: ESG_MANAGER
+      subject.tenantId: "${resource.tenantId}"
+      action: READ
+      resource.type: ActivityData
+    tests:
+      - name: ESG_MANAGER가_동일_테넌트_데이터를_읽을수있다
+        ctx:
+          subject: { role: ESG_MANAGER, tenantId: t1, assignedEntityIds: [e1] }
+          resource: { type: ActivityData, tenantId: t1, attributes: { entityId: e2 } }
+          action: READ
+        expect: PERMIT

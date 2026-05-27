@@ -1,0 +1,21 @@
+policies:
+  - id: disclosed-data-immutability
+    description: 공시 완료된 데이터는 누구도 WRITE/DELETE 불가 (SUPER_ADMIN도 차단)
+    effect: DENY
+    priority: 200
+    when:
+      action: [WRITE, DELETE]
+      resource.approvalState: DISCLOSED
+    tests:
+      - name: SUPER_ADMIN조차_DISCLOSED_데이터_수정_불가
+        ctx:
+          subject: { role: SUPER_ADMIN, tenantId: t1 }
+          resource: { type: ActivityData, tenantId: t1, attributes: { approvalState: DISCLOSED } }
+          action: WRITE
+        expect: DENY
+      - name: TENANT_ADMIN의_DISCLOSED_DELETE_차단
+        ctx:
+          subject: { role: TENANT_ADMIN, tenantId: t1 }
+          resource: { type: ActivityData, tenantId: t1, attributes: { approvalState: DISCLOSED } }
+          action: DELETE
+        expect: DENY

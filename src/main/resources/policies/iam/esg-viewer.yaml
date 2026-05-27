@@ -1,0 +1,37 @@
+policies:
+  - id: esg-viewer-read-non-confidential
+    description: ESG_VIEWER는 동일 테넌트의 비기밀 데이터를 READ만 가능
+    effect: PERMIT
+    when:
+      subject.role: ESG_VIEWER
+      subject.tenantId: "${resource.tenantId}"
+      action: READ
+      resource.sensitivity: [PUBLIC, INTERNAL]
+    tests:
+      - name: ESG_VIEWER가_INTERNAL_데이터를_읽을수있다
+        ctx:
+          subject: { role: ESG_VIEWER, tenantId: t1 }
+          resource: { type: ActivityData, tenantId: t1, attributes: { sensitivity: INTERNAL } }
+          action: READ
+        expect: PERMIT
+      - name: ESG_VIEWER가_CONFIDENTIAL_데이터_접근_시_NOT_APPLICABLE
+        ctx:
+          subject: { role: ESG_VIEWER, tenantId: t1 }
+          resource: { type: ActivityData, tenantId: t1, attributes: { sensitivity: CONFIDENTIAL } }
+          action: READ
+        expect: NOT_APPLICABLE
+
+  - id: esg-viewer-no-write
+    description: ESG_VIEWER는 WRITE/APPROVE 불가 (명시적 DENY로 다른 PERMIT 정책 방어)
+    effect: DENY
+    priority: 50
+    when:
+      subject.role: ESG_VIEWER
+      action: [WRITE, APPROVE, DELETE]
+    tests:
+      - name: ESG_VIEWER가_WRITE_시도_시_차단
+        ctx:
+          subject: { role: ESG_VIEWER, tenantId: t1 }
+          resource: { type: ActivityData, tenantId: t1 }
+          action: WRITE
+        expect: DENY
