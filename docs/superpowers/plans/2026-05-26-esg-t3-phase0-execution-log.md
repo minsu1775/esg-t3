@@ -351,7 +351,7 @@ PATH에 java/docker/node/gradle/gh 모두 등록되어 있지 않음 → **절�
 ## 5. 커밋 이력 (Phase 0)
 
 ```
-<TASK22> docs: insight.md 신규 + Phase 0 실행 로그 완료 (L3-P0-01~13 누적)
+6d1d519 docs: insight.md 신규 + Phase 0 실행 로그 완료 (L3-P0-01~13 누적)         [Task 22]
 7412a30 docs: README 작성 + CLAUDE.md를 esg-t3 운영 헌장으로 전면 교체            [Task 21]
 66efdcf feat: GitHub Actions CI (test, modularity, archunit, runbook, frontend)   [Task 20]
 fc55620 feat: Next.js 16 frontend 초기화 (한국어 lang + 기본 페이지)              [Task 19]
