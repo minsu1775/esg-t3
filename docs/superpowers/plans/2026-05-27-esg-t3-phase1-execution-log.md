@@ -216,29 +216,61 @@ Phase 0 실행 환경과 동일 (`docs/superpowers/plans/2026-05-26-esg-t3-phase
 - **DoD 적용**: L-P1-03 (set_config 파라미터 바인딩) + L-P1-07 (queryForObject 패턴) 모두 본 구현에 반영
 - **shared::tenant NamedInterface 추가**: iam·Phase 2 audit 등이 import 시 명시 필요
 
-### Task 14: JwtTokenProvider + JwtAuthentication
+### Task 14: JwtTokenProvider + JJWT 통합 ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `a2a8e09`
+- **산출물**: JJWT 0.12.6 의존성 + JwtTokenProvider + JwtTokenProviderTest 8건 (253줄)
+- **검증**: 단위 테스트 8건 + ApplicationContext 부팅 정상
+- **DoD 적용**: L-P1-04 (SecretKey 캐싱) + L-P1-05 (secret 미설정 시 부팅 차단)
 
-### Task 15: JwtAuthFilter
+#### parseRefreshToken 추가
+Plan에 명시된 Task 17의 reflectSigningKey hack을 제거하기 위해 Task 14에 `parseRefreshToken(token) → UUID userId` 메서드를 처음부터 포함. Task 17에서 깔끔하게 사용.
 
-- **Status**: TODO
+### Task 16: RedisTokenBlacklist ✅
 
-### Task 16: RedisTokenBlacklist
+- **Status**: DONE
+- **Commit**: `c1b62a3`
+- **산출물**: RedisTokenBlacklist + 통합 테스트 2건 (115줄)
+- **검증**: Testcontainers Redis 7 + DynamicPropertySource로 refresh JTI/access SHA-256 등록·차단 검증
 
-- **Status**: TODO
+#### 발견 + 수정 (L-P1-09 후보)
+- `@ServiceConnection`은 `org.springframework.boot:spring-boot-testcontainers` 별도 의존 필요 (esg-t3는 미의존)
+- **대안**: `@DynamicPropertySource` 패턴 사용 (AbstractIntegrationTest와 동일) — 신규 의존성 회피
 
-### Task 17: AuthController
+### Task 15: JwtAuthFilter ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `34c2de1` + `42eb6e7` (@Component 제거로 IamSecurityConfig 통합)
+- **산출물**: JwtAuthFilter (OncePerRequestFilter, 58줄)
+- **검증 흐름**: Bearer 추출 → 블랙리스트 사전 검사 → parseAccessToken → SecurityContextHolder + TenantContext 주입
 
-### Task 18: IamSecurityConfig + AbacSampleController
+#### 변경 (Task 18 진행 중)
+- @Component 제거 — 서블릿 자동 필터 등록 회피
+- IamSecurityConfig가 `addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)`로 단일 진입
 
-- **Status**: TODO
+### Task 17: AuthController + UserLookupService ✅
 
-### Task 19: GlobalExceptionHandler
+- **Status**: DONE (commit `42eb6e7`, Task 18/19와 번들)
+- **산출물**: LoginRequest/Response/RefreshRequest + UserLookupService + AuthController + InvalidCredentialsException + 통합 테스트 3건
+- **검증**: 정상 로그인 / 잘못된 비밀번호 4xx / 미존재 사용자 4xx
 
-- **Status**: TODO
+### Task 18: IamSecurityConfig (선행 — Task 17 차단 해결) ✅
+
+- **Status**: DONE (commit `42eb6e7`)
+- **산출물**: IamSecurityConfig + ActuatorSecurityConfig 삭제
+- **변경**: @EnableMethodSecurity + permitAll 경로 + JwtAuthFilter 체인 통합 + BCryptPasswordEncoder 빈
+
+#### 진행 순서 변경
+- Plan에서는 Task 18을 14~17 이후로 배치했으나 AuthController 통합 테스트가 ActuatorSecurityConfig의 `anyRequest().authenticated()` 때문에 401 → **순서 변경: 17 → 18 → 19를 한 번에 번들**
+- iam allowedDependencies에 `shared::tenant` 추가 필요(Task 13 후속)
+
+### Task 19: GlobalExceptionHandler ✅
+
+- **Status**: DONE (commit `42eb6e7`, Task 17/18과 번들)
+- **산출물**: AccessDenied/Authentication/EsgException/Validation 4 핸들러 (DoD L-P1-02 적용)
+- **errorCode 매핑**: INVALID_CREDENTIALS/REFRESH_TOKEN_REVOKED/INVALID_TOKEN → 401, POLICY_*_FAILED → 500, 그 외 400
+- **traceId 통합**: MDC.get("traceId")를 ErrorResponse에 포함 (Tempo 역추적)
 
 ### Task 20: LockdownController
 
