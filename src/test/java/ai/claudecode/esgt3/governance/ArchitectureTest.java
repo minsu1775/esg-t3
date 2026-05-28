@@ -7,6 +7,7 @@ import com.tngtech.archunit.lang.ArchRule;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
 /**
  * 모듈 간 의존 규칙을 빌드 시 강제한다. (Section 2.6 ArchUnit 규칙 반영)
@@ -57,5 +58,45 @@ class ArchitectureTest {
         .that().resideInAnyPackage("..domain..")
         .should().beAnnotatedWith("jakarta.persistence.Entity")
         .orShould().dependOnClassesThat().resideInAPackage("jakarta.persistence..")
+        .allowEmptyShould(true);
+
+    // === Phase 1 신규 ===
+
+    /** PolicyEvaluator는 iam.domain 패키지에만 거주 (rule 13-abac-policy.md). */
+    @ArchTest
+    static final ArchRule PolicyEvaluator는_iam_domain에만_거주 = classes()
+        .that().haveSimpleName("PolicyEvaluator")
+        .should().resideInAPackage("..iam.domain..")
+        .allowEmptyShould(true);
+
+    /** iam.domain은 Spring 의존 0 (도메인 = 순수 Java). */
+    @ArchTest
+    static final ArchRule iam_domain은_Spring_의존_금지 = noClasses()
+        .that().resideInAPackage("..iam.domain..")
+        .should().dependOnClassesThat().resideInAPackage("org.springframework..");
+
+    /** iam.domain은 JPA 의존 0. */
+    @ArchTest
+    static final ArchRule iam_domain은_JPA_의존_금지 = noClasses()
+        .that().resideInAPackage("..iam.domain..")
+        .should().dependOnClassesThat().resideInAPackage("jakarta.persistence..");
+
+    /**
+     * 컨트롤러 메서드는 @PreAuthorize 또는 @PermitAll 명시 의무 (esg-t2 L-P1-01).
+     * 누락 시 인가 우회 위험 — 코드 리뷰가 아닌 빌드 차단으로 강제.
+     */
+    @ArchTest
+    static final ArchRule 컨트롤러_메서드는_PreAuthorize_명시 = methods()
+        .that().areDeclaredInClassesThat().resideInAPackage("..api.controller..")
+        .and().arePublic()
+        .and().areAnnotatedWith("org.springframework.web.bind.annotation.GetMapping")
+        .or().areAnnotatedWith("org.springframework.web.bind.annotation.PostMapping")
+        .or().areAnnotatedWith("org.springframework.web.bind.annotation.PutMapping")
+        .or().areAnnotatedWith("org.springframework.web.bind.annotation.DeleteMapping")
+        .or().areAnnotatedWith("org.springframework.web.bind.annotation.PatchMapping")
+        .or().areAnnotatedWith("org.springframework.web.bind.annotation.RequestMapping")
+        .should().beAnnotatedWith("org.springframework.security.access.prepost.PreAuthorize")
+        .orShould().beAnnotatedWith("org.springframework.security.access.annotation.Secured")
+        .orShould().beAnnotatedWith("jakarta.annotation.security.PermitAll")
         .allowEmptyShould(true);
 }

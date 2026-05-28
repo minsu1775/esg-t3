@@ -11,6 +11,7 @@ import io.jsonwebtoken.JwtException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,7 @@ public class AuthController {
     // BCrypt는 stateless - Task 18에서 IamSecurityConfig가 빈 등록 시 의존 주입으로 교체.
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    @PreAuthorize("permitAll()")
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
         var user = userLookup.findByEmail(req.email())
@@ -42,6 +44,7 @@ public class AuthController {
         return ResponseEntity.ok(issueTokens(user.userId(), user.tenantId(), user.role(), user.entityIds()));
     }
 
+    @PreAuthorize("permitAll()")
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(@Valid @RequestBody RefreshRequest req) {
         UUID userId;
@@ -64,6 +67,7 @@ public class AuthController {
         return ResponseEntity.ok(issueTokens(user.userId(), user.tenantId(), user.role(), user.entityIds()));
     }
 
+    @PreAuthorize("permitAll()")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest req) {
         try {
