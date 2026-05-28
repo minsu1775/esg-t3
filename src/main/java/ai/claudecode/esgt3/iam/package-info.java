@@ -6,6 +6,6 @@
  */
 @org.springframework.modulith.ApplicationModule(
     displayName = "IAM (Identity & Access)",
-    allowedDependencies = { "shared" }
+    allowedDependencies = { "shared", "shared::exception", "shared::event", "shared::web" }
 )
 package ai.claudecode.esgt3.iam;
