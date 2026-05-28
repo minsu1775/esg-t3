@@ -43,6 +43,13 @@ esg:
       enabled: false                 # 운영에서만 true
       directory: ./policies/iam      # 호스트 파일시스템 경로
       interval-ms: 1000
+  jwt:
+    secret: ${ESG_JWT_SECRET:}      # 비어 있으면 시작 실패 (운영 안전, L-P1-05)
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-days: 7
+    issuer: esg-t3
+  redis:
+    blacklist-prefix: "esg:t3:jwt:blacklist:"
 
 otel:
   service:

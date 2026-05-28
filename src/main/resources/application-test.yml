@@ -12,6 +12,15 @@ management:
 scheduler:
   enabled: false
 
+esg:
+  jwt:
+    secret: "test-only-secret-256bit-padding-for-hmac-sha256-test-key-padding-padding"
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-days: 7
+    issuer: esg-t3-test
+  redis:
+    blacklist-prefix: "esg:t3:jwt:blacklist:test:"
+
 otel:
   traces:
     sampler: always_off
