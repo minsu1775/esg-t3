@@ -7,6 +7,7 @@ import ai.claudecode.esgt3.iam.domain.PolicyRegistry;
 import ai.claudecode.esgt3.iam.domain.Resource;
 import ai.claudecode.esgt3.iam.domain.Subject;
 import ai.claudecode.esgt3.iam.infra.PolicyDecisionLogger;
+import ai.claudecode.esgt3.observability.PolicyEvaluationMetrics;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -29,6 +31,7 @@ public class PolicyFacade {
     private final PolicyRegistry registry;
     private final PolicyDecisionLogger logger;
     private final OpenTelemetry openTelemetry;
+    private final PolicyEvaluationMetrics metrics;
 
     private Tracer tracer() {
         return openTelemetry.getTracer("ai.claudecode.esgt3.iam");
@@ -38,6 +41,7 @@ public class PolicyFacade {
      * 평가 + 기록 + OTel Span. 반환 true → 호출 허용, false → AccessDeniedException 발생 유도.
      */
     public boolean allow(Authentication authentication, String action, Object resource) {
+        long startNanos = System.nanoTime();
         Span span = tracer().spanBuilder("iam.evaluate_policy").startSpan();
         try (var scope = span.makeCurrent()) {
             PolicyContext ctx = buildContext(authentication, action, resource);
@@ -56,6 +60,12 @@ public class PolicyFacade {
             }
 
             logger.log(ctx, decision);
+            metrics.recordEvaluation(
+                decision.effect().name(),
+                ctx.subject().role(),
+                decision.policyId(),
+                Duration.ofNanos(System.nanoTime() - startNanos)
+            );
             return decision.isAllowed();
         } finally {
             span.end();
