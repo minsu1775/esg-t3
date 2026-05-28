@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -20,7 +19,10 @@ import java.io.IOException;
  * <p>실패 시 SecurityContext 미설정 — 다음 필터·컨트롤러에서 401/403 발생.
  * 토큰이 없으면 통과(다음 필터로 위임).
  */
-@Component
+/**
+ * <p>Spring Security 필터 체인에 IamSecurityConfig가 직접 등록 (@Component 미사용).
+ * 서블릿 필터 자동 등록을 회피하여 Spring Security 체인 단일 진입을 보장.
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
