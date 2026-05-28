@@ -1,7 +1,8 @@
 # Phase 1 실행 로그 (Execution Log)
 
-> **버전**: Plan 작성 완료 - 실행 시작 직전
+> **버전**: Task 1~23 모두 완료 / Phase 1 종료 (87 테스트 통과)
 > **계획 작성일**: 2026-05-27
+> **종료일**: 2026-05-28
 > **목적**: `subagent-driven-development` 스킬로 실행하는 Phase 1의 실제 진행 내역.
 >          사전 계획(plan.md)·설계(design.md)와 별도로 "실제로 어떻게 진행했고 어떤 발견·수정이 있었는가"를 추적.
 >
@@ -272,51 +273,80 @@ Plan에 명시된 Task 17의 reflectSigningKey hack을 제거하기 위해 Task 
 - **errorCode 매핑**: INVALID_CREDENTIALS/REFRESH_TOKEN_REVOKED/INVALID_TOKEN → 401, POLICY_*_FAILED → 500, 그 외 400
 - **traceId 통합**: MDC.get("traceId")를 ErrorResponse에 포함 (Tempo 역추적)
 
-### Task 20: LockdownController
+### Task 20: LockdownController ✅
 
-- **Status**: TODO
+- **Status**: DONE (commit `8d587dc`)
+- **산출물**: LockdownState + LockdownRequest + LockdownController + 통합 테스트 4건
+- **검증**: SUPER_ADMIN 활성화/해제 200, ESG_MANAGER 403, Bearer 없음 4xx
+- **발견**: Spring Security 7은 익명 사용자도 @PreAuthorize 평가 → 미인증도 403 (401 아님)
 
-### Task 21: PolicyEvaluationMetrics
+### Task 21: PolicyEvaluationMetrics ✅
 
-- **Status**: TODO
+- **Status**: DONE (commit `dea3a5c`)
+- **산출물**: PolicyEvaluationMetrics + PolicyFacade 통합 + 단위 테스트 3건
+- **DoD #6 달성**: esg_t3_policy_evaluation_total{effect,role,policy_id} + duration histogram
 
-### Task 22: ArchUnit 보강
+### Task 22: ArchUnit 보강 ✅
 
-- **Status**: TODO
+- **Status**: DONE (commit `8b6658c`)
+- **산출물**: ArchitectureTest 신규 4규칙 + AuthController @PreAuthorize("permitAll()") 명시
+- **발견**: 컨트롤러 메서드 @PreAuthorize 의무 규칙이 AuthController login/refresh/logout을 즉시 적발 → permitAll() 명시로 인가 의도 명문화
 
-### Task 23: Phase 1 DoD 검증 + 문서 + ADR
+### Task 23: Phase 1 DoD 검증 + 문서 + ADR ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **산출물**: V6 마이그레이션(RLS 빈 문자열 방어) + ADR 014~016 + insight.md L-P1-01~10 + runbook 02 본문 보강 + CLAUDE.md 갱신
+- **전체 회귀**: `./gradlew clean test` → **87 테스트 통과**
+
+#### 발견 + 수정 (L-P1-10)
+- `./gradlew clean test` 전체 실행 시 TenantContextInterceptor 테스트가 `''::uuid` 캐스팅 예외로 실패 (커넥션 풀 세션 상태 누출)
+- **V6 마이그레이션**: 모든 RLS 정책을 `NULLIF(current_setting(...), '')::uuid`로 강화 → fail-closed
+- Modulith: PolicyFacade가 observability 의존 → iam allowedDependencies에 `observability` 추가
 
 ---
 
-## 4. Phase 1 종료 시점 체크리스트
+## 4. Phase 1 종료 시점 체크리스트 ✅
 
-(Phase 0 종료 시 사용한 체크리스트와 동일 형식. Phase 1 완료 후 채움.)
+- [x] 전체 테스트 `./gradlew clean test` 통과 (87건)
+- [x] ModularityTest + ArchitectureTest(11규칙) + ConventionTest 통과
+- [x] Modulith Documenter 산출물 `build/spring-modulith-docs/` 갱신
+- [x] DoD 14개 항목 점검 (아래 §4.1)
+- [x] L-P1-01~10 insight.md 정리
+- [x] ADR 014~016 작성
+- [x] runbook 02-rls-leak.md 본문 보강 (emergency-lockdown 연계 + 빈 문자열 방어)
+- [x] CLAUDE.md "현재 진행" → Phase 2 시작 직전
 
-- [ ] 전체 테스트 `./gradlew clean test` 통과
-- [ ] ModularityTest + ArchitectureTest + ConventionTest 통과
-- [ ] Modulith Documenter 산출물 `build/spring-modulith-docs/` 갱신
-- [ ] DoD 14개 항목 모두 ✅
-- [ ] L-P1-01~05 모두 insight.md에 정리
-- [ ] ADR 014~016 작성
-- [ ] runbook 02-rls-leak.md 본문 완성
-- [ ] CLAUDE.md "현재 진행" 업데이트
+### 4.1 DoD 항목별 증거
+
+| DoD | 상태 | 증거 |
+|---|---|---|
+| ABAC 정책 단위 테스트 ≥ 20건 | ✅ | iam.domain 24 + PolicyYamlTestCasesTest 16 동적 = 43건 |
+| SoD 정책 통과 | ✅ | esg-manager-self-approval-prohibition (PolicyYamlTestCasesTest) |
+| priority 200 SUPER_ADMIN 차단 | ✅ | disclosed-data-immutability + PolicyEvaluatorPriorityTest |
+| VERIFIER 미지정 snapshot 차단 | ✅ | verifier.yaml tests (NOT_APPLICABLE) |
+| 정책 핫리로드 < 5초 | ✅ | PolicyHotReloaderTest (Awaitility 5초) |
+| policy_evaluation 메트릭 | ✅ | PolicyEvaluationMetricsTest |
+| L-P1-01 @NamedInterface | ✅ | iam package-info + ModularityTest |
+| L-P1-03 set_config 바인딩 | ✅ | TenantContextInterceptor + ADR-016 |
+| L-P1-04 JwtTokenProvider 캐싱 | ✅ | JwtTokenProvider 빈 |
+| L-P1-02 AccessDenied → 403 | ✅ | GlobalExceptionHandler |
+| L-P1-05 secret 미설정 부팅 차단 | ✅ | JwtTokenProviderTest 2건 |
+| ArchUnit 컨트롤러 @PreAuthorize 의무 | ✅ | ArchitectureTest 신규 규칙 |
+| ArchUnit PolicyEvaluator iam.domain | ✅ | ArchitectureTest 신규 규칙 |
+| Modulith documenter 산출물 | ✅ | ModularityTest |
 
 ---
 
 ## 5. 누적 학습 (L-P1-XX)
 
-(Phase 1 실행 중 발견되는 학습을 여기에 즉시 등록. Phase 종료 시 insight.md L3-P1-XX 슬롯으로 이관.)
-
-(없음 — 실행 시작 전)
+L-P1-01 ~ L-P1-10 모두 `docs/insight.md` Phase 1 섹션으로 이관 완료.
 
 ---
 
 ## 6. Phase 2 인계 사항
 
-(Phase 1 완료 후 Phase 2 시작 전 정리.)
-
-- audit_logs 테이블 생성 시 policy_decisions와의 통합 방식 (Phase 1에서 단순 INSERT만 — Phase 2에서 Hash Chain 컬럼·trace_id·outbox 통합)
-- LockdownController가 발생시키는 `iam.LockdownActivated`/`LockdownReleased` 이벤트는 Phase 1에서 미발행 — Phase 2 audit 모듈 도입 시 추가
-- AuthController의 로그인 성공/실패도 Phase 2 audit 이벤트로 자동 기록
+- policy_decisions 테이블은 Phase 1에서 단순 INSERT만 — Phase 2에서 audit_logs Hash Chain·trace_id·outbox 통합
+- LockdownController의 `iam.LockdownActivated`/`LockdownReleased` 이벤트는 Phase 1 미발행 → Phase 2 audit 도입 시 추가
+- AuthController 로그인 성공/실패도 Phase 2 audit 이벤트로 자동 기록
+- **모듈 경계 정비 필요**: shared::exception/event/web/tenant + observability를 의존하는 모든 도메인 모듈의 package-info에 allowedDependencies 일괄 명시 (L-P1-08)
+- **RLS 빈 문자열 방어**(L-P1-10): Phase 2 이후 신규 RLS 정책은 모두 `NULLIF(..., '')::uuid` 패턴 사용

@@ -34,15 +34,24 @@ Q2: TenantContextInterceptor 동작 누락인가?
 
 ## 4. 복구 절차
 
+### 4.0 즉시 격리 (공통 선행, Phase 1 도입)
+1. `POST /api/v1/admin/lockdown/{tenantId}` (SUPER_ADMIN) — emergency-lockdown 정책(priority 250)이 해당 테넌트의 WRITE/APPROVE/DELETE 즉시 차단
+2. 원인 분석·복구 완료 후 `DELETE /api/v1/admin/lockdown/{tenantId}` (감사 사유 reason 필수)
+
 ### 4.A TenantContextInterceptor 누락
 1. `./scripts/runbook/02-revoke-tenant-sessions.sh <tenant_id>` (모든 세션 만료)
-2. 정확한 누락 지점에 `TenantContextInterceptor` 적용 여부 검증
+2. 정확한 누락 지점에 `TenantContextInterceptor` 적용 여부 검증 (`/api/**` 매핑, `/api/v1/auth/**` 제외)
 3. ArchUnit 규칙 추가 (모든 컨트롤러 메서드에 인터셉터 의존 검증)
 
 ### 4.B 명시적 tenant 누락
 1. 누출 범위 SQL 쿼리로 산정
 2. 영향 사용자 통보 (개인정보보호법 §34 위반 통보 의무)
 3. RLS 정책 재검토 + Repository 단위 테스트 추가
+
+### 4.C set_config 값 오염 (Phase 1 L-P1-10)
+1. `current_setting('app.current_tenant_id', true)`가 빈 문자열·잘못된 값을 반환하는지 확인
+2. RLS 정책은 `NULLIF(current_setting(...), '')::uuid`로 빈 문자열을 NULL 처리(fail-closed) — V6 마이그레이션 적용 여부 확인
+3. set_config 호출이 파라미터 바인딩(`?`) + `queryForObject` 패턴을 따르는지 검증 (L-P1-03/07)
 
 ## 5. 사후 조치
 
@@ -58,5 +67,7 @@ Q2: TenantContextInterceptor 동작 누락인가?
 
 ## 7. 관련 자료
 
-- ADR-006-postgresql-rls.md
-- Spec §3 (ABAC + RLS 이중 방어)
+- ADR-016-rls-set-config-binding.md (set_config 바인딩 + 빈 문자열 방어)
+- ADR-014-abac-yaml-dsl.md (emergency-lockdown 정책)
+- design.md §3.8 (ABAC + RLS 이중 방어)
+- insight.md L-P1-03 / L-P1-07 / L-P1-10

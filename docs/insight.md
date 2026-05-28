@@ -101,6 +101,65 @@ esg-t2/docs/insight.md의 L-0-01~L-0-16, L-P0-01~ 모든 항목 그대로 유효
 
 ---
 
-## Phase 1~8
+## Phase 1: Identity & ABAC (esg-t3 신규 학습)
+
+> 본 섹션은 Phase 1 실행 로그(`docs/superpowers/plans/2026-05-27-esg-t3-phase1-execution-log.md` §5)의 L-P1-01~10 항목을 정식 누적.
+> Phase 1은 23개 task / 단위·통합 테스트 87건으로 완료.
+
+### L-P1-01: Spring Modulith @NamedInterface 모듈 경계
+
+**현상**: shared 모듈의 `exception`/`event`/`web`/`tenant` 패키지가 각각 `@NamedInterface`로 선언되어 있어, iam의 `allowedDependencies = { "shared" }`만으로는 ModularityTest 실패.
+
+**교훈**: NamedInterface가 선언된 하위 패키지를 의존하려면 `shared::exception` 형식으로 명시해야 한다. 또한 observability를 cross-cutting으로 의존할 때는 `observability`를 allowedDependencies에 추가. 자세한 경계는 ADR-014 참조.
+
+### L-P1-02: AccessDeniedException → 403 명시 핸들러 필수
+
+**현상**: `@PreAuthorize` 거부 시 GlobalExceptionHandler에 핸들러가 없으면 Spring 기본 500 반환.
+
+**교훈**: `@ExceptionHandler(AccessDeniedException.class)` → 403, `AuthenticationException` → 401 명시 등록. esg-t2 L-P1-02 재확인.
+
+### L-P1-03: set_config 파라미터 바인딩 (SQL Injection 방어)
+
+**교훈**: `set_config('app.current_tenant_id', ?, true)` 파라미터 바인딩 필수. 문자열 연결 금지. ADR-016 참조.
+
+### L-P1-04: JwtTokenProvider 빈 캐싱
+
+**교훈**: SecretKey 객체는 빈 생성 시 1회만 초기화. 매 토큰 발행 시 `Keys.hmacShaKeyFor()` 재호출 금지 (성능).
+
+### L-P1-05: JWT secret 미설정 시 부팅 차단
+
+**교훈**: `ESG_JWT_SECRET` 환경변수 누락 또는 32B 미만이면 생성자에서 `IllegalStateException` → 부팅 차단 (운영 안전, fail-fast).
+
+### L-P1-06: 마이그레이션 번호 충돌 (Task 1)
+
+**현상**: Phase 1 plan이 V2부터 시작한다고 가정했으나 Phase 0가 이미 `V2__disclosure_schedule_seed.sql` 점유 → V3/V4/V5로 시프트.
+
+**교훈**: plan에서 마이그레이션 추가 전 `ls db/migration/` 출력을 인용해 번호 충돌을 사전 확인. plan self-review 체크리스트에 마이그레이션 번호 점검 단계 추가.
+
+### L-P1-07: set_config는 함수라 queryForObject 사용 (Task 11)
+
+**현상**: `jdbcTemplate.update("SELECT set_config(...)", ...)`는 `DataIntegrityViolationException("A result was returned when none was expected")`.
+
+**교훈**: `set_config(...)`는 SELECT 함수로 결과 행을 반환 → `jdbcTemplate.queryForObject("SELECT set_config(...)", String.class, ...)` 사용. 파라미터 바인딩은 그대로.
+
+### L-P1-08: shared 하위 NamedInterface allowedDependencies 누적 (Task 12)
+
+**교훈**: 도메인 모듈이 EsgException(`shared::exception`)·DomainEvent(`shared::event`)·ErrorResponse(`shared::web`)·TenantContext(`shared::tenant`)를 쓸 때마다 해당 NamedInterface를 allowedDependencies에 추가해야 함. Phase 2~ 모든 모듈 package-info에 일괄 정비 필요.
+
+### L-P1-09: Spring Boot 4 @ServiceConnection 별도 의존 (Task 16)
+
+**현상**: `org.springframework.boot.test.autoconfigure...AutoConfigureMockMvc`·`@ServiceConnection`이 esg-t3 의존성에 없음.
+
+**교훈**: MockMvc는 `MockMvcBuilders.webAppContextSetup(context).apply(springSecurity())` 패턴, 컨테이너 연결은 `@DynamicPropertySource` 사용 (AbstractIntegrationTest와 일관). 신규 의존성 회피.
+
+### L-P1-10: RLS 정책 빈 문자열 방어 (Task 23)
+
+**현상**: `current_setting('app.current_tenant_id', true)::uuid`에서 GUC가 빈 문자열 `''`이면 `''::uuid` 캐스팅이 `invalid input syntax for type uuid` 예외. HikariCP 커넥션 풀 재사용으로 이전 세션 상태 누출.
+
+**교훈**: RLS 정책에 `NULLIF(current_setting(...), '')::uuid` 사용 → 빈 문자열을 NULL로 변환해 "테넌트 미설정 = 전체 차단"(fail-closed). Phase 2 이후 모든 RLS 정책에 동일 패턴 적용. (V6 마이그레이션)
+
+---
+
+## Phase 2~8
 
 각 Phase 종료 시 신규 학습 누적 예정.
