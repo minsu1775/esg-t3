@@ -207,9 +207,14 @@ Phase 0 실행 환경과 동일 (`docs/superpowers/plans/2026-05-26-esg-t3-phase
 - **수정**: `{ "shared", "shared::exception", "shared::event", "shared::web" }`로 확장
 - 다른 도메인 모듈(audit, entity, ghg 등)도 EsgException·DomainEvent·ErrorResponse를 쓰게 되면 동일 보강 필요
 
-### Task 13: TenantContext + TenantContextInterceptor
+### Task 13: TenantContext + TenantContextInterceptor ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `3fa81a3`
+- **산출물**: TenantContext + Interceptor + WebConfig + package-info + 통합 테스트 (200줄)
+- **검증**: Testcontainers PG 18에서 app_role 전환 RLS 격리 2건 모두 통과
+- **DoD 적용**: L-P1-03 (set_config 파라미터 바인딩) + L-P1-07 (queryForObject 패턴) 모두 본 구현에 반영
+- **shared::tenant NamedInterface 추가**: iam·Phase 2 audit 등이 import 시 명시 필요
 
 ### Task 14: JwtTokenProvider + JwtAuthentication
 
