@@ -182,13 +182,30 @@ Phase 0 실행 환경과 동일 (`docs/superpowers/plans/2026-05-26-esg-t3-phase
 - **DoD #5 달성**: 정책 YAML 핫리로드 < 5초
 - **부수 효과**: ApplicationContextTest 통과 — Spring 컨텍스트가 정책 6개 로드 후 부팅 성공
 
-### Task 11: V4 policy_decisions + PolicyDecisionLogger
+### Task 11: V5 policy_decisions + PolicyDecisionLogger ✅
 
-- **Status**: TODO
+- **Status**: DONE
+- **Commit**: `e77801a` + `60f2e6a` (plan 정정)
+- **산출물**: V5 SQL + PolicyDecisionEntity/Repository/Logger + 통합 테스트 (237줄)
+- **검증**: PolicyDecisionLoggerIntegrationTest 2건(PERMIT/DENY) Testcontainers PG 18 통과
 
-### Task 12: PolicyFacade
+#### 발견 + 수정 (L-P1-07 후보)
+- **`SELECT set_config(...)`는 함수라 결과 행을 반환** → `jdbcTemplate.update()`는 `DataIntegrityViolationException("A result was returned when none was expected")` 발생
+- **정답**: `jdbcTemplate.queryForObject("SELECT set_config(...)", String.class, ...)` 패턴
+- Task 13 TenantContextInterceptor 본문도 동일 패턴으로 작성 필요 → plan에 정정 박스 추가
 
-- **Status**: TODO
+### Task 12: PolicyFacade ✅
+
+- **Status**: DONE
+- **Commit**: `eed79c0`
+- **산출물**: PolicyFacade + SubjectMapper + iam.api/package-info.java + JwtAuthentication 선행 (153줄)
+- **검증**: ApplicationContextTest 통과 (PolicyFacade 빈 + PolicyDecisionLogger 의존성 주입 정상)
+
+#### 발견 + 수정 (L-P1-08 후보)
+- **Phase 0에서 만든 shared.exception/event/web가 각각 @NamedInterface 보유**
+- iam의 `allowedDependencies = { "shared" }`만으로는 ModularityTest 실패
+- **수정**: `{ "shared", "shared::exception", "shared::event", "shared::web" }`로 확장
+- 다른 도메인 모듈(audit, entity, ghg 등)도 EsgException·DomainEvent·ErrorResponse를 쓰게 되면 동일 보강 필요
 
 ### Task 13: TenantContext + TenantContextInterceptor
 
